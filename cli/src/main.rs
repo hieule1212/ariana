@@ -46,6 +46,10 @@ struct Cli {
     #[arg(long)]
     only_local: bool,
 
+    /// Start MCP server for model context protocol
+    #[arg(long)]
+    mcp: bool,
+
     /// The command to execute in the instrumented code directory
     #[arg(required = true, trailing_var_arg = true)]
     command: Vec<String>,
@@ -61,15 +65,20 @@ async fn main() -> Result<()> {
     env::set_var("RUST_BACKTRACE", "1");
     
     let cli = Cli::parse();
-    match run_main(cli).await {
-        Ok(_) => Ok(()),
-        Err(e) => {
-            eprintln!("Error occurred: {:#}", e);
-            
-            let backtrace = e.backtrace();
-            eprintln!("\nBacktrace:\n{}", backtrace);
 
-            Err(e)
+    if cli.mcp {
+        launch_mcp_server().await
+    } else {
+        match run_main(cli).await {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                eprintln!("Error occurred: {:#}", e);
+                
+                let backtrace = e.backtrace();
+                eprintln!("\nBacktrace:\n{}", backtrace);
+    
+                Err(e)
+            }
         }
     }
 }
